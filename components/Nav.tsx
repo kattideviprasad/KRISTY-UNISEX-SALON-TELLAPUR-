@@ -4,7 +4,6 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, useScroll, useMotionValueEvent } from 'motion/react';
-import { MenuItem, Menu, HoveredLink } from '@/components/ui/navbar-menu';
 
 // Service categories that link to #services?category=...
 const SERVICE_CATEGORIES = [

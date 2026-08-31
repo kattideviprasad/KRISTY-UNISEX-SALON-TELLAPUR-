@@ -12,6 +12,9 @@ function getSecret(): string {
 // ─── Password verification ────────────────────────────────────────────────────
 
 export function verifyPassword(inputPassword: string): boolean {
+  if (!inputPassword || typeof inputPassword !== 'string' || inputPassword.length > 128) {
+    return false;
+  }
   const storedHash = process.env.ADMIN_PASSWORD_HASH;
   const storedUsername = process.env.ADMIN_USERNAME;
   if (!storedHash || !storedUsername) return false;
@@ -31,8 +34,11 @@ export function verifyPassword(inputPassword: string): boolean {
 }
 
 export function verifyUsername(inputUsername: string): boolean {
+  if (!inputUsername || typeof inputUsername !== 'string' || inputUsername.length > 100) {
+    return false;
+  }
   const stored = process.env.ADMIN_USERNAME ?? '';
-  if (!stored || !inputUsername) return false;
+  if (!stored) return false;
   // Constant-time string comparison
   try {
     const a = Buffer.from(inputUsername.padEnd(64).slice(0, 64));

@@ -7,6 +7,11 @@ import { revalidatePath } from 'next/cache';
 
 const VALID_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed'];
 
+function isValidUUID(val?: string | null): boolean {
+  if (!val) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+}
+
 export async function updateBookingStatus(id: string, status: string) {
   // Server-side auth check — verify custom session cookie
   const cookieStore = await cookies();
@@ -19,7 +24,7 @@ export async function updateBookingStatus(id: string, status: string) {
     return { error: 'Invalid status value' };
   }
 
-  if (!id || typeof id !== 'string') {
+  if (!isValidUUID(id)) {
     return { error: 'Invalid booking ID' };
   }
 
@@ -31,7 +36,7 @@ export async function updateBookingStatus(id: string, status: string) {
 
   if (error) {
     console.error('updateBookingStatus error:', error);
-    return { error: error.message };
+    return { error: 'Failed to update booking status. Please try again.' };
   }
 
   revalidatePath('/admin');

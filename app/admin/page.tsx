@@ -42,7 +42,7 @@ export default async function AdminPage() {
     <BookingsDashboard
       bookings={(bookings as Booking[]) || []}
       adminEmail="kristy"
-      fetchError={error ? error.message : null}
+      fetchError={error ? 'Failed to load bookings from database.' : null}
     />
   );
 }

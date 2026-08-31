@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 type Service = {
@@ -21,32 +21,32 @@ const CATEGORIES = [
 
 const SERVICES: Service[] = [
   // Face & Skin Care (13 services)
-  { id: 1,  name: 'Facial',                              category: 'Face & Skin Care', accent: false },
+  { id: 1,  name: 'Facial',                             category: 'Face & Skin Care', accent: false },
   { id: 2,  name: 'Anti Acne Facial',                   category: 'Face & Skin Care', accent: false },
-  { id: 3,  name: 'Skin Treatment',                     category: 'Face & Skin Care', accent: true  },
+  { id: 3,  name: 'Skin Treatment',                     category: 'Face & Skin Care', accent: false },
   { id: 4,  name: 'Skin Treatment – Anti Acne',         category: 'Face & Skin Care', accent: false },
   { id: 5,  name: 'D-Tan Pack – Face',                  category: 'Face & Skin Care', accent: false },
   { id: 6,  name: 'Tan Pack – Face',                    category: 'Face & Skin Care', accent: false },
   { id: 7,  name: 'Chemical Peel Treatment',            category: 'Face & Skin Care', accent: true  },
   { id: 8,  name: 'Facial Wrinkles',                    category: 'Face & Skin Care', accent: false },
-  { id: 9,  name: 'Radiance Rejuvenating Cocoa Facial', category: 'Face & Skin Care', accent: false },
-  { id: 10, name: 'Facial Glow',                        category: 'Face & Skin Care', accent: true  },
+  { id: 9,  name: 'Radiance Rejuvenating Cocoa Facial', category: 'Face & Skin Care', accent: true  },
+  { id: 10, name: 'Facial Glow',                        category: 'Face & Skin Care', accent: false },
   { id: 11, name: 'Pimple Treatment',                   category: 'Face & Skin Care', accent: false },
   { id: 12, name: 'Vital Peel Facial',                  category: 'Face & Skin Care', accent: false },
-  { id: 13, name: 'Thermo Herb Facial',                 category: 'Face & Skin Care', accent: true  },
+  { id: 13, name: 'Thermo Herb Facial',                 category: 'Face & Skin Care', accent: false },
 
   // Hair (5 services)
-  { id: 14, name: 'Hair Cut',          category: 'Hair', accent: false },
-  { id: 15, name: 'Advance Hair Cut',  category: 'Hair', accent: false },
-  { id: 16, name: 'Hair Styling',      category: 'Hair', accent: true  },
-  { id: 17, name: 'Hair Extension',    category: 'Hair', accent: false },
-  { id: 18, name: 'Shaving',           category: 'Hair', accent: false },
+  { id: 14, name: 'Hair Cut',         category: 'Hair', accent: false },
+  { id: 15, name: 'Advance Hair Cut', category: 'Hair', accent: true  },
+  { id: 16, name: 'Hair Styling',     category: 'Hair', accent: false },
+  { id: 17, name: 'Hair Extension',   category: 'Hair', accent: true  },
+  { id: 18, name: 'Shaving',          category: 'Hair', accent: false },
 
   // Bridal & Makeup (4 services)
-  { id: 19, name: 'Basic Makeup',    category: 'Bridal & Makeup', accent: false },
-  { id: 20, name: 'Bridal Package',  category: 'Bridal & Makeup', accent: true  },
-  { id: 21, name: 'Basic Mehandi',   category: 'Bridal & Makeup', accent: false },
-  { id: 22, name: 'Bridal Mehandi',  category: 'Bridal & Makeup', accent: false },
+  { id: 19, name: 'Basic Makeup',   category: 'Bridal & Makeup', accent: false },
+  { id: 20, name: 'Bridal Package', category: 'Bridal & Makeup', accent: true  },
+  { id: 21, name: 'Basic Mehandi',  category: 'Bridal & Makeup', accent: false },
+  { id: 22, name: 'Bridal Mehandi', category: 'Bridal & Makeup', accent: false },
 
   // Threading (1 service)
   { id: 23, name: 'Threading – Eyebrows', category: 'Threading', accent: false },
@@ -56,22 +56,22 @@ const SERVICES: Service[] = [
 ];
 
 function ServicesContent() {
-  const [activeCategory, setActiveCategory] = useState('All');
   const searchParams = useSearchParams();
+  const catParam = searchParams.get('category');
 
-  // Pre-select category from URL ?category= param (set by navbar dropdown links)
-  useEffect(() => {
-    const cat = searchParams.get('category');
-    if (cat) {
-      const match = CATEGORIES.find((c) => c.key === cat);
-      if (match) setActiveCategory(match.key);
+  const [activeCategory, setActiveCategory] = useState(() => {
+    if (catParam) {
+      const match = CATEGORIES.find((c) => c.key === catParam);
+      if (match) return match.key;
     }
-  }, [searchParams]);
+    return 'All';
+  });
 
-  const visible =
-    activeCategory === 'All'
+  const visible = useMemo(() => {
+    return activeCategory === 'All'
       ? SERVICES
       : SERVICES.filter((s) => s.category === activeCategory);
+  }, [activeCategory]);
 
   return (
     <section

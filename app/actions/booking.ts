@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import crypto from 'crypto';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export type BookingFormState = {
   success: boolean;
@@ -31,6 +32,17 @@ export async function submitBooking(
   _prevState: BookingFormState,
   formData: FormData
 ): Promise<BookingFormState> {
+  // 0. Rate limiting (max 5 booking submissions per 10 minutes per IP)
+  const clientIp = await getClientIp();
+  const rateLimitResult = checkRateLimit(`booking:${clientIp}`, 5, 10 * 60 * 1000);
+  if (!rateLimitResult.success) {
+    const minutesLeft = Math.ceil(rateLimitResult.resetSeconds / 60);
+    return {
+      success: false,
+      error: `Too many booking requests from your connection. Please wait ${minutesLeft} minute${minutesLeft > 1 ? 's' : ''} or call us directly at 095156 25554.`,
+    };
+  }
+
   const rawName   = (formData.get('customer_name')  as string) || '';
   const rawPhone  = (formData.get('customer_phone')  as string) || '';
   const rawEmail  = (formData.get('customer_email')  as string | null) || null;
@@ -150,7 +162,8 @@ export async function submitBooking(
 
     // Fallback if table does not have service_name or location column
     if (error && (error.message?.includes('service_name') || error.message?.includes('location'))) {
-      const { id: _id, location: _loc, ...fallbackPayload } = bookingPayload as Record<string, unknown>;
+      const fallbackPayload = { ...bookingPayload };
+      delete fallbackPayload.location;
       const fallbackResult = await supabase
         .from('bookings')
         .insert({ id: bookingId, ...fallbackPayload });
@@ -159,26 +172,9 @@ export async function submitBooking(
 
     if (error) {
       console.error('Supabase booking insert error:', error);
-
-      if (error.code === '42501' || error.message?.includes('row-level security')) {
-        return {
-          success: false,
-          error:
-            'Security policy update needed on Supabase. Please ensure your "bookings" table allows public inserts (run: CREATE POLICY "public_insert_bookings" ON bookings FOR INSERT WITH CHECK (true);) or call 095156 25554 to book.',
-        };
-      }
-
-      if (error.code === 'PGRST205' || error.message?.includes('schema cache')) {
-        return {
-          success: false,
-          error:
-            'The bookings table was not found in Supabase. Please execute the SQL migration in Supabase SQL Editor or call 095156 25554.',
-        };
-      }
-
       return {
         success: false,
-        error: error.message || 'Could not complete your booking. Please call 095156 25554 directly.',
+        error: 'Unable to process your booking request at this time. Please call us at 095156 25554 to book directly.',
       };
     }
 

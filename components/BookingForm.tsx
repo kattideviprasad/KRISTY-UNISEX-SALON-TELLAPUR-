@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useMemo, useEffect, useRef } from 'react';
+import { useActionState, useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { submitBooking, type BookingFormState } from '@/app/actions/booking';
 
@@ -58,35 +58,25 @@ function getLocalDateString(): string {
 
 export default function BookingForm({ services }: { services: Service[] }) {
   const [state, formAction, isPending] = useActionState(submitBooking, initialState);
-  const [selectedServiceId, setSelectedServiceId] = useState('');
-  const [phone, setPhone] = useState('');
-  const [phoneTouched, setPhoneTouched] = useState(false);
   const searchParams = useSearchParams();
   const locationParam = searchParams.get('location');
-  const [selectedLocation, setSelectedLocation] = useState(
-    locationParam === 'gopanpally' ? 'gopanpally' : 'tellapur'
-  );
-  // Sync location if URL param changes (e.g. navigating between book links)
-  const didSyncLocation = useRef(false);
-  useEffect(() => {
-    if (!didSyncLocation.current && locationParam) {
-      didSyncLocation.current = true;
-      setSelectedLocation(locationParam === 'gopanpally' ? 'gopanpally' : 'tellapur');
-    }
-  }, [locationParam]);
-
-  // Pre-select service from URL ?service_name= param (set by "Book this service" buttons)
   const serviceNameParam = searchParams.get('service_name');
-  const didSyncService = useRef(false);
-  useEffect(() => {
-    if (!didSyncService.current && serviceNameParam && services.length > 0) {
-      didSyncService.current = true;
+
+  const [selectedServiceId, setSelectedServiceId] = useState(() => {
+    if (serviceNameParam && services.length > 0) {
       const match = services.find(
         (s) => s.name.toLowerCase() === serviceNameParam.toLowerCase()
       );
-      if (match) setSelectedServiceId(match.id);
+      if (match) return match.id;
     }
-  }, [serviceNameParam, services]);
+    return '';
+  });
+
+  const [phone, setPhone] = useState('');
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(() =>
+    locationParam === 'gopanpally' ? 'gopanpally' : 'tellapur'
+  );
 
   // Date and Time state
   const todayStr = useMemo(() => getLocalDateString(), []);
@@ -132,12 +122,10 @@ export default function BookingForm({ services }: { services: Service[] }) {
     });
   }, [selectedDate]);
 
-  // If currently selected time is no longer available (e.g. date changed to today), clear it
-  useEffect(() => {
-    if (selectedTime && !availableTimeSlots.includes(selectedTime)) {
-      setSelectedTime('');
-    }
-  }, [availableTimeSlots, selectedTime]);
+  // Effective time selection guaranteed to be valid among available slots
+  const effectiveSelectedTime = availableTimeSlots.includes(selectedTime)
+    ? selectedTime
+    : '';
 
   // Handle phone input: strictly allow digits only, capped at 10
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -522,7 +510,7 @@ export default function BookingForm({ services }: { services: Service[] }) {
               id="booking-time"
               name="preferred_time"
               required
-              value={selectedTime}
+              value={effectiveSelectedTime}
               onChange={(e) => setSelectedTime(e.target.value)}
               disabled={noSlotsRemainingToday}
               style={{
