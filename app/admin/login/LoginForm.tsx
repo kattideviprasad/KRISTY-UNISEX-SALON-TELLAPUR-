@@ -20,17 +20,11 @@ export default function LoginForm() {
       const result = await signIn(username, password);
       if (result?.error) {
         setError(result.error);
-      } else if (result?.success) {
-        router.push('/admin');
-        router.refresh();
-        return;
-      } else {
-        setError('Invalid credentials. Please try again.');
+        setLoading(false);
       }
     } catch (err: unknown) {
       console.error('Login submission error:', err);
       setError('Unable to complete sign in. Please check your credentials and try again.');
-    } finally {
       setLoading(false);
     }
   }
