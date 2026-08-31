@@ -4,35 +4,7 @@ import Image from 'next/image';
 export default function Hero() {
   return (
     <section id="hero" className="hero-section">
-      {/* ── Background Photo — on desktop occupies right 50%, on mobile fills 100% ── */}
-      <div className="hero-image-container">
-        <Image
-          src="/hero2.png"
-          alt="Inside KRISTY UNISEX SALON, Tellapur"
-          fill
-          priority
-          sizes="(max-width: 768px) 100vw, 50vw"
-          quality={95}
-          className="hero-image"
-          style={{
-            objectFit: 'cover',
-            objectPosition: 'center center',
-          }}
-        />
-
-        {/* Mobile full-bleed dark gradient overlay for text legibility */}
-        <div className="hero-mobile-overlay" />
-
-        {/* Desktop left-edge blend gradient */}
-        <div className="hero-desktop-blend" />
-
-        {/* Studio location caption */}
-        <div className="hero-caption">
-          <span>The Studio · Tellapur</span>
-        </div>
-      </div>
-
-      {/* ── Content Panel — on desktop left panel, on mobile overlaid on top of image ── */}
+      {/* ── LEFT PANEL (Desktop Column 1) — on mobile overlaid on top of image ── */}
       <div className="hero-content-panel">
         {/* Logo badge */}
         <div className="hero-logo-badge">
@@ -99,6 +71,34 @@ export default function Hero() {
         <div className="hero-scroll-indicator">
           <div className="hero-scroll-line" />
           <span className="hero-scroll-text">Scroll</span>
+        </div>
+      </div>
+
+      {/* ── RIGHT PANEL (Desktop Column 2) — on mobile fills 100% full-bleed background ── */}
+      <div className="hero-image-container">
+        <Image
+          src="/hero2.png"
+          alt="Inside KRISTY UNISEX SALON, Tellapur"
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, 50vw"
+          quality={95}
+          className="hero-image"
+          style={{
+            objectFit: 'cover',
+            objectPosition: 'center center',
+          }}
+        />
+
+        {/* Mobile full-bleed dark gradient overlay for text legibility */}
+        <div className="hero-mobile-overlay" />
+
+        {/* Desktop left-edge blend gradient */}
+        <div className="hero-desktop-blend" />
+
+        {/* Studio location caption */}
+        <div className="hero-caption">
+          <span>The Studio · Tellapur</span>
         </div>
       </div>
 
