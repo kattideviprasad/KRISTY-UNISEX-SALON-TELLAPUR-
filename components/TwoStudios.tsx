@@ -21,7 +21,7 @@ const studios = [
     hours: 'Open daily, 7:00 AM – 11:00 PM',
     blurb:
       'Known for bridal makeup, mehendi, and stylists who walk you through every step',
-    image: '/reception.jpg.PNG',
+    image: '/about-hero.jpg',
     imageAlt: 'Gopanpally studio reception',
     mapsUrl: GOPANPALLY_MAPS,
     bookingLocation: 'gopanpally',
