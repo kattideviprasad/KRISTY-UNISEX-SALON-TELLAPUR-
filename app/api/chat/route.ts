@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
     while (attempt <= maxAttempts) {
       try {
         response = await groq.chat.completions.create({
-          model: 'llama-3.3-70b-versatile',
+          model: 'qwen/qwen3.8-27b',
           // @ts-ignore
           messages: formattedMessages,
           temperature: 0.7,
