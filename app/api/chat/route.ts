@@ -3,6 +3,8 @@ import { getAdminSupabaseClient } from '@/lib/supabase/admin';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { GoogleGenAI } from '@google/genai';
 
+export const maxDuration = 60; // Allow Vercel function to run longer for complex Gemini responses
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type ChatMessage = {
@@ -15,18 +17,7 @@ type ChatRequest = {
   history: ChatMessage[];
 };
 
-// ─── Business context cache ──────────────────────────────────────────────────
-
-let cachedSystemPrompt: string | null = null;
-let cacheTimestamp = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
 async function getSystemPrompt(): Promise<string> {
-  const now = Date.now();
-  if (cachedSystemPrompt && now - cacheTimestamp < CACHE_TTL) {
-    return cachedSystemPrompt;
-  }
-
   let branchesInfo = '';
   let servicesInfo = '';
   let packagesInfo = '';
@@ -103,7 +94,7 @@ async function getSystemPrompt(): Promise<string> {
   Hours: 7:00 AM - 11:00 PM`;
   }
 
-  cachedSystemPrompt = `You are the friendly AI assistant for KRISTY UNISEX SALON, a premium unisex beauty & grooming salon in Hyderabad, India. Your name is "Kristy's Assistant."
+  const prompt = `You are the friendly AI assistant for KRISTY UNISEX SALON, a premium unisex beauty & grooming salon in Hyderabad, India. Your name is "Kristy's Assistant."
 
 IMPORTANT RULES:
 1. ONLY answer questions about Kristy Salon — services, pricing, hours, locations, booking process, and general salon-related queries.
@@ -127,8 +118,7 @@ USEFUL LINKS:
 - Share feedback: /feedback
 - The salon is open daily at both locations.`;
 
-  cacheTimestamp = now;
-  return cachedSystemPrompt;
+  return prompt;
 }
 
 // ─── POST handler ────────────────────────────────────────────────────────────
