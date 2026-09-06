@@ -1,10 +1,15 @@
 'use client';
 
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { signOut } from './actions/auth';
 import { updateBookingStatus } from './actions/bookings';
+import { fetchDashboardData } from './actions/dashboard-data';
 import type { Booking } from './page';
+import BranchSwitcher, { type BranchValue } from '@/components/BranchSwitcher';
+import CustomersDashboard from './CustomersDashboard';
+import FeedbackDashboard from './FeedbackDashboard';
+import MembersDashboard from './MembersDashboard';
 
 // ─── Types & constants ────────────────────────────────────────────────────────
 
@@ -23,7 +28,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; border: string 
 };
 
 const ALL_STATUSES = ['all', 'pending', 'confirmed', 'cancelled', 'completed'];
-const ALL_LOCATIONS = ['all', 'tellapur', 'gopanpally'];
+
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -258,24 +263,65 @@ function BookingDetail({
 // ─── Main dashboard component ─────────────────────────────────────────────────
 
 export default function BookingsDashboard({
-  bookings: initialBookings,
   adminEmail,
-  fetchError,
 }: {
-  bookings: Booking[];
   adminEmail: string;
-  fetchError?: string | null;
 }) {
-  const [bookings, setBookings] = useState<Booking[]>(initialBookings);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [branchSlug, setBranchSlug] = useState<BranchValue>('tellapur');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [locationFilter, setLocationFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [copiedSql, setCopiedSql] = useState(false);
+  const [activeTab, setActiveTab] = useState<'bookings' | 'customers' | 'feedback' | 'members'>('bookings');
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  // Check if location column exists in any booking
-  const hasLocation = bookings.some((b) => 'location' in b && b.location);
+  // Fetch bookings whenever branchSlug changes
+  const loadBookings = useCallback(async (slug: BranchValue) => {
+    setIsLoading(true);
+    setFetchError(null);
+    try {
+      const result = await fetchDashboardData(slug);
+      setBookings(result.bookings as Booking[]);
+      if (result.error) setFetchError(result.error);
+    } catch {
+      setFetchError('Failed to load bookings.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Silent refresh: updates data without showing loading spinner
+  const silentRefreshBookings = useCallback(async (slug: BranchValue) => {
+    try {
+      const result = await fetchDashboardData(slug);
+      if (!result.error) {
+        setBookings(result.bookings as Booking[]);
+      }
+    } catch {
+      // Silently ignore errors on auto-refresh
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBookings(branchSlug);
+  }, [branchSlug, loadBookings]);
+
+  // Auto-refresh every 60 seconds for the active tab (silent — no spinner)
+  useEffect(() => {
+    if (activeTab !== 'bookings') return;
+    const interval = setInterval(() => {
+      silentRefreshBookings(branchSlug);
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [branchSlug, activeTab, silentRefreshBookings]);
+
+  function handleBranchChange(value: BranchValue) {
+    setBranchSlug(value);
+    setExpandedId(null);
+  }
 
   // Stats
   const weekStart = useMemo(() => getWeekStart(), []);
@@ -290,15 +336,14 @@ export default function BookingsDashboard({
   const filtered = useMemo(() => {
     return bookings.filter((b) => {
       const matchStatus = statusFilter === 'all' || b.status === statusFilter;
-      const matchLocation = locationFilter === 'all' || (b.location ?? 'tellapur') === locationFilter;
       const q = search.toLowerCase().trim();
       const matchSearch =
         !q ||
         b.customer_name.toLowerCase().includes(q) ||
         b.customer_phone.includes(q);
-      return matchStatus && matchLocation && matchSearch;
+      return matchStatus && matchSearch;
     });
-  }, [bookings, statusFilter, locationFilter, search]);
+  }, [bookings, statusFilter, search]);
 
   function handleStatusUpdated(id: string, status: string) {
     setBookings((prev) =>
@@ -312,18 +357,7 @@ export default function BookingsDashboard({
     });
   }
 
-  const sqlPolicySnippet = `-- Run this in Supabase SQL Editor to allow admin queries to read and update bookings:
-DROP POLICY IF EXISTS "admin_read_bookings" ON bookings;
-CREATE POLICY "admin_read_bookings" ON bookings FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "admin_update_bookings" ON bookings;
-CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH CHECK (true);`;
-
-  function handleCopySql() {
-    navigator.clipboard.writeText(sqlPolicySnippet);
-    setCopiedSql(true);
-    setTimeout(() => setCopiedSql(false), 3000);
-  }
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -367,6 +401,7 @@ CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH C
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <BranchSwitcher value={branchSlug} onChange={handleBranchChange} />
           <span style={{ fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif', fontSize: '15px', color: '#b4aeac', display: 'none' }} className="md:inline">
             Logged in as <strong style={{ color: '#ffffff' }}>{adminEmail}</strong>
           </span>
@@ -399,11 +434,78 @@ CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH C
         </div>
       </div>
 
+      {/* ── Tab Bar ── */}
+      <div
+        style={{
+          backgroundColor: '#0a0a0a',
+          borderBottom: '1px solid rgba(180,174,172,0.15)',
+          padding: '0 28px',
+          display: 'flex',
+          gap: '0',
+        }}
+      >
+        {['bookings', 'customers', 'feedback', 'members'].map((tab) => {
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab as 'bookings' | 'customers' | 'feedback' | 'members')}
+              style={{
+                fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
+                fontSize: '15px',
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'capitalize',
+                color: isActive ? '#c9a96e' : '#8e8886',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderBottom: isActive ? '2px solid #c9a96e' : '2px solid transparent',
+                padding: '14px 24px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) e.currentTarget.style.color = '#b4aeac';
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) e.currentTarget.style.color = '#8e8886';
+              }}
+            >
+              {tab}
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── Content ── */}
       <div style={{ maxWidth: '1360px', margin: '0 auto', padding: '36px 28px' }}>
 
+        {/* ── Bookings Tab ── */}
+        {activeTab === 'bookings' && (<>
+
+        {/* ── Loading indicator ── */}
+        {isLoading && (
+          <div
+            style={{
+              backgroundColor: 'rgba(201,169,110,0.08)',
+              border: '1px solid rgba(201,169,110,0.25)',
+              borderRadius: '8px',
+              padding: '14px 20px',
+              marginBottom: '24px',
+              color: '#c9a96e',
+              fontSize: '15px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+            }}
+          >
+            <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid rgba(201,169,110,0.3)', borderTopColor: '#c9a96e', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            Loading bookings…
+          </div>
+        )}
+
         {/* ── Error Banner if any ── */}
-        {fetchError && (
+        {fetchError && !isLoading && (
           <div
             style={{
               backgroundColor: 'rgba(229,115,115,0.1)',
@@ -523,35 +625,7 @@ CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH C
             })}
           </div>
 
-          {/* Location filter — only if data has location */}
-          {hasLocation && (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {ALL_LOCATIONS.map((loc) => {
-                const active = locationFilter === loc;
-                return (
-                  <button
-                    key={loc}
-                    onClick={() => setLocationFilter(loc)}
-                    style={{
-                      fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      padding: '9px 18px',
-                      borderRadius: '6px',
-                      border: active ? '1px solid rgba(180,174,172,0.6)' : '1px solid rgba(180,174,172,0.2)',
-                      backgroundColor: active ? 'rgba(180,174,172,0.12)' : 'transparent',
-                      color: active ? '#ffffff' : '#8e8886',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s',
-                      textTransform: 'capitalize',
-                    }}
-                  >
-                    {loc === 'all' ? 'All Branches' : loc === 'tellapur' ? 'Tellapur' : 'Gopanpally'}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+
         </div>
 
         {/* ── Results count ── */}
@@ -573,85 +647,15 @@ CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH C
           {filtered.length === 0 ? (
             <div style={{ padding: '64px 28px', textAlign: 'center' }}>
               <p style={{ fontFamily: 'var(--font-heading), ui-serif, Georgia, serif', fontSize: '26px', color: '#f2f1ed' }}>
-                No bookings displaying
+                {search ? 'No results found' : 'No bookings yet'}
               </p>
               <p style={{ fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif', fontSize: '16px', color: '#b4aeac', marginTop: '10px', maxWidth: '640px', marginInline: 'auto', lineHeight: 1.6 }}>
                 {search
                   ? `No bookings match "${search}". Try clearing your search.`
-                  : bookings.length === 0
-                  ? 'If bookings were submitted on your website but are not appearing here, Supabase Row-Level Security (RLS) is active on the bookings table and needs a SELECT policy.'
-                  : 'No bookings match the selected status filter.'}
+                  : statusFilter !== 'all'
+                  ? 'No bookings match the selected status filter.'
+                  : 'No bookings have been placed for this branch yet. They\u2019ll appear here once customers start booking.'}
               </p>
-
-              {bookings.length === 0 && (
-                <div
-                  style={{
-                    marginTop: '28px',
-                    maxWidth: '680px',
-                    marginInline: 'auto',
-                    backgroundColor: '#181818',
-                    border: '1px solid rgba(201,169,110,0.3)',
-                    borderRadius: '8px',
-                    padding: '20px 24px',
-                    textAlign: 'left',
-                  }}
-                >
-                  <p style={{ fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif', fontSize: '14px', fontWeight: 600, color: '#c9a96e', marginBottom: '8px' }}>
-                    Quick Fix: Run this in Supabase SQL Editor
-                  </p>
-                  <p style={{ fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif', fontSize: '13px', color: '#b4aeac', marginBottom: '14px' }}>
-                    Go to <a href="https://supabase.com/dashboard/project/lopyfhtncrhjimnkhfwf/sql/new" target="_blank" rel="noopener noreferrer" style={{ color: '#c9a96e', textDecoration: 'underline' }}>Supabase SQL Editor</a>, paste and run:
-                  </p>
-                  <pre
-                    style={{
-                      fontFamily: 'monospace',
-                      fontSize: '13px',
-                      backgroundColor: '#0a0a0a',
-                      padding: '14px',
-                      borderRadius: '6px',
-                      color: '#7ecf91',
-                      overflowX: 'auto',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      marginBottom: '14px',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {sqlPolicySnippet}
-                  </pre>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <button
-                      onClick={handleCopySql}
-                      style={{
-                        fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        backgroundColor: copiedSql ? '#7ecf91' : '#c9a96e',
-                        color: '#000000',
-                        border: 'none',
-                        borderRadius: '5px',
-                        padding: '8px 16px',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s',
-                      }}
-                    >
-                      {copiedSql ? '✓ Copied SQL to Clipboard!' : 'Copy SQL'}
-                    </button>
-                    <a
-                      href="https://supabase.com/dashboard/project/lopyfhtncrhjimnkhfwf/sql/new"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
-                        fontSize: '13px',
-                        color: '#c9a96e',
-                        textDecoration: 'underline',
-                      }}
-                    >
-                      Open Supabase SQL Editor →
-                    </a>
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <>
@@ -659,9 +663,7 @@ CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH C
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: hasLocation
-                    ? '1.8fr 1.4fr 1.6fr 1.3fr 1.1fr 1fr 1fr'
-                    : '1.8fr 1.4fr 1.8fr 1.3fr 1fr 1fr',
+                  gridTemplateColumns: '1.8fr 1.4fr 1.8fr 1.3fr 1fr 1fr',
                   gap: '12px',
                   padding: '16px 24px',
                   borderBottom: '1px solid rgba(180,174,172,0.15)',
@@ -669,7 +671,7 @@ CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH C
                 }}
                 className="hidden-mobile"
               >
-                {['Client Name', 'Phone Number', 'Service', 'Appointment', ...(hasLocation ? ['Branch'] : []), 'Status', 'Submitted'].map((h) => (
+                {['Client Name', 'Phone Number', 'Service', 'Appointment', 'Status', 'Submitted'].map((h) => (
                   <span key={h} style={{ ...sectionLabel, fontSize: '13px' }}>
                     {h}
                   </span>
@@ -686,9 +688,7 @@ CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH C
                       onClick={() => setExpandedId(isExpanded ? null : booking.id)}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: hasLocation
-                          ? '1.8fr 1.4fr 1.6fr 1.3fr 1.1fr 1fr 1fr'
-                          : '1.8fr 1.4fr 1.8fr 1.3fr 1fr 1fr',
+                        gridTemplateColumns: '1.8fr 1.4fr 1.8fr 1.3fr 1fr 1fr',
                         gap: '12px',
                         padding: '18px 24px',
                         cursor: 'pointer',
@@ -753,12 +753,7 @@ CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH C
                         </p>
                       </div>
 
-                      {/* Location */}
-                      {hasLocation && (
-                        <span style={{ fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif', fontSize: '15px', color: '#b4aeac', textTransform: 'capitalize' }}>
-                          {booking.location === 'gopanpally' ? 'Gopanpally' : booking.location ? 'Tellapur' : '—'}
-                        </span>
-                      )}
+
 
                       {/* Status */}
                       <div>
@@ -811,6 +806,23 @@ CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH C
             </>
           )}
         </div>
+
+        </>)}
+
+        {/* ── Customers Tab ── */}
+        {activeTab === 'customers' && (
+          <CustomersDashboard branchSlug={branchSlug} />
+        )}
+
+        {/* ── Feedback Tab ── */}
+        {activeTab === 'feedback' && (
+          <FeedbackDashboard branchSlug={branchSlug} />
+        )}
+
+        {/* ── Members Tab ── */}
+        {activeTab === 'members' && (
+          <MembersDashboard />
+        )}
       </div>
 
       {/* Responsive CSS — inline for admin only */}
@@ -820,6 +832,9 @@ CREATE POLICY "admin_update_bookings" ON bookings FOR UPDATE USING (true) WITH C
         @media (max-width: 860px) {
           .hidden-mobile { display: none !important; }
           .mobile-only   { display: block !important; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

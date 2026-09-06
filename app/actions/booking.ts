@@ -134,6 +134,92 @@ export async function submitBooking(
   const bookingId = crypto.randomUUID();
 
   try {
+    // ─── Try the new multi-branch schema first ──────────────────────────
+    // The v2 path requires the service role key to bypass RLS on
+    // customers and bookings_v2. If it's not set, skip straight to legacy.
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!serviceKey || !supabaseUrl) {
+      console.log('[booking] SUPABASE_SERVICE_ROLE_KEY not set — skipping v2, using legacy table');
+    } else {
+      const { createClient: createSupabaseJsClient } = await import('@supabase/supabase-js');
+      const adminClient = createSupabaseJsClient(supabaseUrl, serviceKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+
+      // Look up branch_id from slug
+      const { data: branchData, error: branchError } = await adminClient
+        .from('branches')
+        .select('id, phone')
+        .eq('slug', location)
+        .single();
+
+      console.log(`[booking] Branch lookup for "${location}":`, branchError
+        ? `ERROR — ${branchError.message} (code: ${branchError.code})`
+        : `OK — branch_id=${branchData?.id}`);
+
+      if (!branchError && branchData?.id) {
+        // Upsert customer by phone (service role bypasses RLS — can SELECT/INSERT freely)
+        const customerId = crypto.randomUUID();
+        const { data: customerData, error: customerError } = await adminClient
+          .from('customers')
+          .upsert(
+            {
+              id: customerId,
+              name: customerName,
+              phone: cleanPhone,
+              email: customerEmail || null,
+            },
+            { onConflict: 'phone' }
+          )
+          .select('id')
+          .single();
+
+        if (customerError) {
+          console.error('[booking] Customer upsert error:', customerError.message, `(code: ${customerError.code})`);
+          // Fall through to legacy
+        } else {
+          const resolvedCustomerId = customerData.id;
+          console.log(`[booking] Customer resolved: ${resolvedCustomerId}`);
+
+          // Build booking payload for bookings_v2
+          const v2Payload: Record<string, unknown> = {
+            id: bookingId,
+            branch_id: branchData.id,
+            customer_id: resolvedCustomerId,
+            booking_date: preferredDate,
+            booking_time: preferredTime,
+            status: 'pending',
+            notes: fullNotes || null,
+          };
+
+          if (isValidUUID(serviceId)) {
+            v2Payload.service_id = serviceId;
+          }
+
+          console.log(`[booking] Inserting into bookings_v2 with branch_id=${branchData.id}, customer_id=${resolvedCustomerId}`);
+
+          const { error: v2Error } = await adminClient
+            .from('bookings_v2')
+            .insert(v2Payload);
+
+          if (!v2Error) {
+            console.log(`[booking] ✅ bookings_v2 insert SUCCESS — id=${bookingId}`);
+            revalidatePath('/booking');
+            return { success: true, bookingId };
+          }
+
+          console.error(`[booking] ❌ bookings_v2 insert FAILED:`, v2Error.message, `(code: ${v2Error.code})`);
+        }
+      }
+    }
+
+    console.log('[booking] Falling back to legacy "bookings" table');
+
+
+
+    // ─── Fallback: Legacy flat bookings table ───────────────────────────
     const supabase = await createClient();
 
     const bookingPayload: Record<string, unknown> = {

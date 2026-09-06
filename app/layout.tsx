@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { heading, body } from './fonts';
 import './globals.css';
 import { cn } from '@/lib/utils';
+import ChatWidget from '@/components/ChatWidget';
 
 export const metadata: Metadata = {
   title: 'KRISTY UNISEX SALON — Premium Hair & Beauty in Tellapur, Hyderabad',
@@ -59,7 +60,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-bone text-ink font-sans">{children}</body>
+      <body className="bg-bone text-ink font-sans">
+        {children}
+        <ChatWidget />
+      </body>
     </html>
   );
 }

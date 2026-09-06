@@ -6,7 +6,7 @@ import Link from 'next/link';
 const GOOGLE_MAPS_URL =
   'https://maps.google.com/?q=KRISTY+UNISEX+SALON,+Door+No+27,+14/32,+Osman+Nagar+Rd,+beside+Vision+Arsha,+Tellapur,+Hyderabad,+Telangana+502034';
 
-export default function Footer() {
+export default function Footer({ branchSlug }: { branchSlug?: string }) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -298,6 +298,8 @@ export default function Footer() {
                 { label: 'About', href: '#about' },
                 { label: 'Gallery', href: '#gallery' },
                 { label: 'Book an Appointment', href: '/booking' },
+                { label: 'Share Your Feedback', href: '/feedback' },
+                { label: 'Join the Kristy Club', href: '/membership' },
               ].map((link) => {
                 const isInternal = link.href.startsWith('/');
                 const linkStyle = {
@@ -330,6 +332,75 @@ export default function Footer() {
                   </a>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Reviews & Social column */}
+          <div>
+            <p
+              style={{
+                fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
+                fontSize: '11px',
+                letterSpacing: '0.14em',
+                color: '#646464',
+                textTransform: 'uppercase',
+                marginBottom: '20px',
+              }}
+            >
+              Reviews & Social
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <a
+                href={
+                  branchSlug === 'gopanpally'
+                    ? 'https://maps.app.goo.gl/v7sPXjeLXPjM9j2TA' // Gopanpally Google Review link
+                    : 'https://maps.app.goo.gl/dQdoLTQgLuYSvUjd9' // Tellapur Google Review link
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: '#000000',
+                  backgroundColor: '#c9a96e',
+                  padding: '12px 20px',
+                  textDecoration: 'none',
+                  letterSpacing: '0.04em',
+                  display: 'inline-block',
+                  textAlign: 'center',
+                  transition: 'opacity 0.2s',
+                  borderRadius: '2px',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+              >
+                Leave us a Google Review
+              </a>
+              <a
+                href="https://www.instagram.com/kristyunisex"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: '#ffffff',
+                  backgroundColor: 'transparent',
+                  border: '1px solid #c9a96e',
+                  padding: '12px 20px',
+                  textDecoration: 'none',
+                  letterSpacing: '0.04em',
+                  display: 'inline-block',
+                  textAlign: 'center',
+                  transition: 'background-color 0.2s',
+                  borderRadius: '2px',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(201,169,110,0.1)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                Follow us on Instagram
+              </a>
             </div>
           </div>
         </div>

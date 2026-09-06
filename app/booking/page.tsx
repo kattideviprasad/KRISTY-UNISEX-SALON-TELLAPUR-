@@ -14,6 +14,42 @@ export const metadata: Metadata = {
 // Revalidate page data in background every 5 minutes
 export const revalidate = 300;
 
+/* ── Branch info lookup ─────────────────────────────────────────────── */
+const BRANCH_INFO: Record<string, {
+  name: string;
+  address: string[];
+  phone: string;
+  phoneTel: string;
+  hours: string;
+}> = {
+  tellapur: {
+    name: 'Tellapur — Osman Nagar',
+    address: [
+      'Door No 27, 14/32,',
+      'Osman Nagar Rd,',
+      'beside Vision Arsha,',
+      'Tellapur, Hyderabad,',
+      'Telangana 502034',
+    ],
+    phone: '095156 25554',
+    phoneTel: '+919515625554',
+    hours: '8 AM – 10 PM',
+  },
+  gopanpally: {
+    name: 'Gopanpally — The Original',
+    address: [
+      '1st Floor, Tellapur Rd,',
+      'opp. Muppa Green Grandeur,',
+      'Gopanpalle, Gopanpally,',
+      'Hyderabad,',
+      'Telangana 500046',
+    ],
+    phone: '091532 24444',
+    phoneTel: '+919153224444',
+    hours: '7 AM – 11 PM',
+  },
+};
+
 async function getServices(): Promise<SalonService[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -52,8 +88,16 @@ async function getServices(): Promise<SalonService[]> {
   return SALON_SERVICES;
 }
 
-export default async function BookingPage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function BookingPage({ searchParams }: PageProps) {
   const services = await getServices();
+  const params = await searchParams;
+  const locationParam = typeof params.location === 'string' ? params.location : 'tellapur';
+  const branchSlug = locationParam === 'gopanpally' ? 'gopanpally' : 'tellapur';
+  const branch = BRANCH_INFO[branchSlug];
 
   return (
     <>
@@ -135,10 +179,10 @@ export default async function BookingPage() {
               Fill in the form below and we will confirm your appointment by
               phone. For immediate bookings, call{' '}
               <a
-                href="tel:+919515625554"
+                href={`tel:${branch.phoneTel}`}
                 style={{ color: '#ffffff', textDecoration: 'none' }}
               >
-                095156 25554
+                {branch.phone}
               </a>
               .
             </p>
@@ -177,10 +221,21 @@ export default async function BookingPage() {
                   letterSpacing: '0.14em',
                   color: '#646464',
                   textTransform: 'uppercase',
-                  marginBottom: '16px',
+                  marginBottom: '6px',
                 }}
               >
                 Visit Us
+              </p>
+              <p
+                style={{
+                  fontFamily: 'var(--font-heading), ui-serif, Georgia, serif',
+                  fontSize: '15px',
+                  color: '#000000',
+                  fontWeight: 400,
+                  marginBottom: '16px',
+                }}
+              >
+                {branch.name}
               </p>
               <p
                 style={{
@@ -191,18 +246,15 @@ export default async function BookingPage() {
                   marginBottom: '20px',
                 }}
               >
-                Door No 27, 14/32,
-                <br />
-                Osman Nagar Rd,
-                <br />
-                beside Vision Arsha,
-                <br />
-                Tellapur, Hyderabad,
-                <br />
-                Telangana 502034
+                {branch.address.map((line, i) => (
+                  <span key={i}>
+                    {line}
+                    {i < branch.address.length - 1 && <br />}
+                  </span>
+                ))}
               </p>
               <a
-                href="tel:+919515625554"
+                href={`tel:${branch.phoneTel}`}
                 style={{
                   fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
                   fontSize: '14px',
@@ -213,7 +265,7 @@ export default async function BookingPage() {
                   marginBottom: '8px',
                 }}
               >
-                095156 25554
+                {branch.phone}
               </a>
               <p
                 style={{
@@ -222,7 +274,7 @@ export default async function BookingPage() {
                   color: '#646464',
                 }}
               >
-                Open daily · Closes 10 PM
+                Open daily · {branch.hours}
               </p>
             </div>
 
@@ -256,6 +308,24 @@ export default async function BookingPage() {
                 seriously.
               </p>
             </div>
+
+            <Link
+              href="/feedback"
+              style={{
+                display: 'block',
+                fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
+                fontSize: '13px',
+                color: '#646464',
+                textDecoration: 'none',
+                letterSpacing: '0.04em',
+                textAlign: 'center',
+                padding: '14px 20px',
+                transition: 'color 0.2s',
+              }}
+            >
+              Been here before?{' '}
+              <span style={{ color: '#c9a96e', fontWeight: 500 }}>Share Your Feedback →</span>
+            </Link>
           </div>
 
           {/* Booking form */}
@@ -268,3 +338,4 @@ export default async function BookingPage() {
     </>
   );
 }
+

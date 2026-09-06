@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifySessionToken, COOKIE_NAME } from '@/lib/admin-session';
-import { getAdminSupabaseClient } from '@/lib/supabase/admin';
 import BookingsDashboard from './BookingsDashboard';
 
 export const dynamic = 'force-dynamic';
@@ -27,22 +26,11 @@ export default async function AdminPage() {
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!verifySessionToken(token)) redirect('/admin/login');
 
-  // Fetch all bookings newest-first using admin Supabase client
-  const supabase = await getAdminSupabaseClient();
-  const { data: bookings, error } = await supabase
-    .from('bookings')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Admin fetch bookings error:', error);
-  }
-
+  // Data is now fetched client-side via fetchDashboardData, driven by
+  // the BranchSwitcher selection. Only auth gating happens server-side.
   return (
     <BookingsDashboard
-      bookings={(bookings as Booking[]) || []}
       adminEmail="kristy"
-      fetchError={error ? 'Failed to load bookings from database.' : null}
     />
   );
 }
