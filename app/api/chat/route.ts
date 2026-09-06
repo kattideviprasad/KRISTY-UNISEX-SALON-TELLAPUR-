@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSupabaseClient } from '@/lib/supabase/admin';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
-import { GoogleGenAI } from '@google/genai';
+import Groq from 'groq-sdk';
 
-export const maxDuration = 60; // Allow Vercel function to run longer for complex Gemini responses
+export const maxDuration = 60; // Allow Vercel function to run longer for complex Groq responses
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -137,9 +137,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    console.error('[chat] GEMINI_API_KEY not configured');
+    console.error('[chat] GROQ_API_KEY not configured');
     return NextResponse.json(
       {
         reply:
@@ -173,19 +173,17 @@ export async function POST(request: NextRequest) {
   try {
     const systemPrompt = await getSystemPrompt();
 
-    // Build Gemini API request
-    const ai = new GoogleGenAI({ apiKey });
+    // Build Groq API request
+    const groq = new Groq({ apiKey });
 
-    // Format the contents according to the new SDK structure
-    const formattedContents = [
+    // Format the contents according to the OpenAI/Groq structure
+    const formattedMessages = [
+      { role: 'system', content: systemPrompt },
       ...recentHistory.map((msg) => ({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.text }],
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.text,
       })),
-      {
-        role: 'user',
-        parts: [{ text: trimmedMessage }],
-      },
+      { role: 'user', content: trimmedMessage },
     ];
 
     let response;
@@ -194,19 +192,11 @@ export async function POST(request: NextRequest) {
 
     while (attempt <= maxAttempts) {
       try {
-        response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: formattedContents,
-          config: {
-            systemInstruction: systemPrompt,
-            temperature: 0.7,
-            safetySettings: [
-              { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-              { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-              { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-              { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-            ] as any,
-          },
+        response = await groq.chat.completions.create({
+          model: 'llama-3.3-70b-versatile',
+          // @ts-ignore
+          messages: formattedMessages,
+          temperature: 0.7,
         });
         // Success: break out of the retry loop
         break;
@@ -226,7 +216,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const reply = response?.text || "I'm sorry, I couldn't generate a response. Please try again!";
+    const reply = response?.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response. Please try again!";
 
     return NextResponse.json({ reply });
   } catch (err: any) {
