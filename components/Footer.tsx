@@ -100,7 +100,7 @@ export default function Footer({ branchSlug }: { branchSlug?: string }) {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <a
-                href="tel:+919515625554"
+                href={branchSlug === 'gopanpally' ? 'tel:+919153224444' : 'tel:+919515625554'}
                 style={{
                   fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
                   fontSize: '14px',
@@ -110,7 +110,7 @@ export default function Footer({ branchSlug }: { branchSlug?: string }) {
                   letterSpacing: '0.02em',
                 }}
               >
-                095156 25554
+                {branchSlug === 'gopanpally' ? '091532 24444' : '095156 25554'}
               </a>
               <p
                 style={{
@@ -120,15 +120,31 @@ export default function Footer({ branchSlug }: { branchSlug?: string }) {
                   color: '#b4aeac',
                 }}
               >
-                Door No 27, 14/32,
-                <br />
-                Osman Nagar Rd,
-                <br />
-                beside Vision Arsha,
-                <br />
-                Tellapur, Hyderabad,
-                <br />
-                Telangana 502034
+                {branchSlug === 'gopanpally' ? (
+                  <>
+                    1st Floor, Tellapur Rd,
+                    <br />
+                    opp. Muppa Green Grandeur,
+                    <br />
+                    Gopanpalle, Gopanpally,
+                    <br />
+                    Hyderabad,
+                    <br />
+                    Telangana 500046
+                  </>
+                ) : (
+                  <>
+                    Door No 27, 14/32,
+                    <br />
+                    Osman Nagar Rd,
+                    <br />
+                    beside Vision Arsha,
+                    <br />
+                    Tellapur, Hyderabad,
+                    <br />
+                    Telangana 502034
+                  </>
+                )}
               </p>
               <a
                 href={GOOGLE_MAPS_URL}
@@ -192,7 +208,7 @@ export default function Footer({ branchSlug }: { branchSlug?: string }) {
 
                 {/* WhatsApp */}
                 <a
-                  href="https://wa.me/919153224444"
+                  href={branchSlug === 'gopanpally' ? 'https://wa.me/919153224444' : 'https://wa.me/919515625554'}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Chat with Kristy Unisex Salon on WhatsApp"
@@ -261,20 +277,9 @@ export default function Footer({ branchSlug }: { branchSlug?: string }) {
                     color: '#ffffff',
                   }}
                 >
-                  Closes 10 PM
+                  {branchSlug === 'gopanpally' ? '7:00 AM – 11:00 PM' : '8:00 AM – 10:00 PM'}
                 </span>
               </div>
-              <p
-                style={{
-                  fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
-                  fontSize: '12px',
-                  color: '#646464',
-                  marginTop: '8px',
-                  fontStyle: 'italic',
-                }}
-              >
-                Full weekly schedule to be confirmed.
-              </p>
             </div>
           </div>
 
