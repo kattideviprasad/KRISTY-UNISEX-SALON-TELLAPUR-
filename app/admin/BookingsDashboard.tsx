@@ -65,6 +65,27 @@ function getWeekStart() {
   return d;
 }
 
+function getLocalDateString(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getDateGroup(dateStr: string, todayStr: string) {
+  if (dateStr === todayStr) return { label: 'Today', order: 1 };
+  
+  const d = new Date(dateStr);
+  const t = new Date(todayStr);
+  const diff = Math.round((d.getTime() - t.getTime()) / (1000 * 3600 * 24));
+  
+  if (diff === 1) return { label: 'Tomorrow', order: 2 };
+  if (diff > 1 && diff <= 7) return { label: 'Upcoming (Next 7 Days)', order: 3 };
+  if (diff > 7) return { label: 'Later', order: 4 };
+  return { label: 'Past', order: 5 };
+}
+
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
@@ -332,9 +353,9 @@ export default function BookingsDashboard({
     return { total, thisWeek, pending };
   }, [bookings, weekStart]);
 
-  // Filtered bookings
+  // Filtered and sorted bookings
   const filtered = useMemo(() => {
-    return bookings.filter((b) => {
+    const res = bookings.filter((b) => {
       const matchStatus = statusFilter === 'all' || b.status === statusFilter;
       const q = search.toLowerCase().trim();
       const matchSearch =
@@ -343,6 +364,26 @@ export default function BookingsDashboard({
         b.customer_phone.includes(q);
       return matchStatus && matchSearch;
     });
+
+    const todayStr = getLocalDateString();
+    
+    res.sort((a, b) => {
+      const aGroup = getDateGroup(a.preferred_date, todayStr);
+      const bGroup = getDateGroup(b.preferred_date, todayStr);
+      
+      if (aGroup.order !== bGroup.order) return aGroup.order - bGroup.order;
+      
+      // Within same group: if past, sort descending. else ascending.
+      if (aGroup.order === 5) {
+        if (a.preferred_date !== b.preferred_date) return b.preferred_date.localeCompare(a.preferred_date);
+        return b.preferred_time.localeCompare(a.preferred_time);
+      } else {
+        if (a.preferred_date !== b.preferred_date) return a.preferred_date.localeCompare(b.preferred_date);
+        return a.preferred_time.localeCompare(b.preferred_time);
+      }
+    });
+
+    return res;
   }, [bookings, statusFilter, search]);
 
   function handleStatusUpdated(id: string, status: string) {
@@ -679,11 +720,36 @@ export default function BookingsDashboard({
               </div>
 
               {/* Rows */}
-              {filtered.map((booking) => {
+              {filtered.map((booking, index) => {
                 const isExpanded = expandedId === booking.id;
+                const todayStr = getLocalDateString();
+                const currentGroup = getDateGroup(booking.preferred_date, todayStr).label;
+                const prevGroup = index > 0 ? getDateGroup(filtered[index - 1].preferred_date, todayStr).label : null;
+                const showHeader = currentGroup !== prevGroup;
+
                 return (
-                  <div key={booking.id} style={{ borderBottom: '1px solid rgba(180,174,172,0.08)' }}>
-                    {/* ── Desktop row ── */}
+                  <div key={booking.id}>
+                    {showHeader && (
+                      <div style={{
+                        padding: '12px 24px',
+                        backgroundColor: currentGroup === 'Today' ? 'rgba(201,169,110,0.15)' : 'rgba(255,255,255,0.02)',
+                        borderBottom: '1px solid rgba(180,174,172,0.15)',
+                        borderTop: index > 0 ? '1px solid rgba(180,174,172,0.15)' : 'none',
+                        color: currentGroup === 'Today' ? '#c9a96e' : '#b4aeac',
+                        fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        position: 'sticky',
+                        top: '70px', // Below the top navbar
+                        zIndex: 10,
+                      }}>
+                        {currentGroup}
+                      </div>
+                    )}
+                    <div style={{ borderBottom: '1px solid rgba(180,174,172,0.08)' }}>
+                      {/* ── Desktop row ── */}
                     <div
                       onClick={() => setExpandedId(isExpanded ? null : booking.id)}
                       style={{
@@ -800,6 +866,7 @@ export default function BookingsDashboard({
                         onUpdated={handleStatusUpdated}
                       />
                     )}
+                  </div>
                   </div>
                 );
               })}

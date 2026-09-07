@@ -79,7 +79,8 @@ export async function fetchDashboardData(
         service:services_v2 ( name ),
         branch:branches!inner ( slug )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     // Filter by branch
     if (branchIds.length === 1) {
