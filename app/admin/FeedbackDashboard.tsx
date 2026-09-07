@@ -182,12 +182,7 @@ export default function FeedbackDashboard({
 
       {/* ── Stats row ── */}
       <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '20px',
-          marginBottom: '40px',
-        }}
+        className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10"
       >
         {[
           {
@@ -230,19 +225,14 @@ export default function FeedbackDashboard({
 
       {/* ── Search ── */}
       <div
-        style={{
-          backgroundColor: '#111111',
-          border: '1px solid rgba(180,174,172,0.15)',
-          borderRadius: '10px',
-          padding: '20px 24px',
-          marginBottom: '24px',
-        }}
+        className="bg-[#111111] border border-[rgba(180,174,172,0.15)] rounded-[10px] p-5 mb-6"
       >
         <input
           type="search"
           placeholder="Search by customer name or phone…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          className="w-full"
           style={{
             fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
             fontSize: '16px',
@@ -252,9 +242,6 @@ export default function FeedbackDashboard({
             borderRadius: '6px',
             padding: '11px 18px',
             outline: 'none',
-            minWidth: '260px',
-            width: '100%',
-            maxWidth: '500px',
           }}
           onFocus={(e) => (e.currentTarget.style.borderColor = '#c9a96e')}
           onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(180,174,172,0.25)')}
@@ -291,15 +278,14 @@ export default function FeedbackDashboard({
           <>
             {/* Table header */}
             <div
+              className="hidden md:grid"
               style={{
-                display: 'grid',
                 gridTemplateColumns: '1.6fr 1.1fr 0.8fr 1fr 1fr 1.8fr 1fr',
                 gap: '12px',
                 padding: '16px 24px',
                 borderBottom: '1px solid rgba(180,174,172,0.15)',
                 backgroundColor: 'rgba(255,255,255,0.02)',
               }}
-              className="hidden-mobile"
             >
               {[
                 { label: 'Customer', sortable: false },
@@ -335,8 +321,8 @@ export default function FeedbackDashboard({
                   {/* Desktop row */}
                   <div
                     onClick={() => setExpandedId(isExpanded ? null : fb.id)}
+                    className="hidden md:grid"
                     style={{
-                      display: 'grid',
                       gridTemplateColumns: '1.6fr 1.1fr 0.8fr 1fr 1fr 1.8fr 1fr',
                       gap: '12px',
                       padding: '18px 24px',
@@ -351,7 +337,6 @@ export default function FeedbackDashboard({
                     onMouseLeave={(e) => {
                       if (!isExpanded) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent';
                     }}
-                    className="hidden-mobile"
                   >
                     {/* Name */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -411,13 +396,13 @@ export default function FeedbackDashboard({
                   {/* Mobile card */}
                   <div
                     onClick={() => setExpandedId(isExpanded ? null : fb.id)}
+                    className="block md:hidden"
                     style={{
                       padding: '20px 24px',
                       cursor: 'pointer',
                       borderTop: '1px solid rgba(180,174,172,0.08)',
                       backgroundColor: isExpanded ? 'rgba(201,169,110,0.06)' : 'transparent',
                     }}
-                    className="mobile-only"
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                       <div>

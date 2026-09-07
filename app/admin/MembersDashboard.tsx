@@ -69,16 +69,8 @@ export default function MembersDashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Top Controls & Stats */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '16px',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-        }}
-      >
-        <div style={{ flex: '1 1 300px' }}>
+      <div className="flex flex-col md:flex-row flex-wrap gap-4 justify-between items-stretch md:items-start mb-6">
+        <div className="flex-1 min-w-[300px] w-full">
           <input
             type="text"
             placeholder="Search members (name, phone, email, branch)..."

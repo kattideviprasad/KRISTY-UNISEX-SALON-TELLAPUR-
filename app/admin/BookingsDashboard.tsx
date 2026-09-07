@@ -416,38 +416,49 @@ export default function BookingsDashboard({
 
       {/* ── Top bar ── */}
       <div
-        style={{
-          backgroundColor: '#0a0a0a',
-          borderBottom: '1px solid rgba(180,174,172,0.15)',
-          padding: '0 28px',
-          height: '70px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 40,
-        }}
+        className="flex flex-col md:flex-row items-center justify-between p-4 md:px-7 md:h-[70px] sticky top-0 z-40 bg-[#0a0a0a] border-b border-[rgba(180,174,172,0.15)] gap-4"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', border: '1px solid rgba(180,174,172,0.3)', flexShrink: 0 }}>
-            <Image src="/logo.png" alt="Kristy" width={42} height={42} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', border: '1px solid rgba(180,174,172,0.3)', flexShrink: 0 }}>
+              <Image src="/logo.png" alt="Kristy" width={42} height={42} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            </div>
+            <div>
+              <p style={{ fontFamily: 'var(--font-heading), ui-serif, Georgia, serif', fontSize: '19px', letterSpacing: '0.06em', color: '#ffffff', lineHeight: 1.1 }}>
+                KRISTY UNISEX SALON
+              </p>
+              <p style={{ ...sectionLabel, fontSize: '12px', marginTop: '3px', color: '#c9a96e' }}>Admin Dashboard</p>
+            </div>
           </div>
-          <div>
-            <p style={{ fontFamily: 'var(--font-heading), ui-serif, Georgia, serif', fontSize: '19px', letterSpacing: '0.06em', color: '#ffffff', lineHeight: 1.1 }}>
-              KRISTY UNISEX SALON
-            </p>
-            <p style={{ ...sectionLabel, fontSize: '12px', marginTop: '3px', color: '#c9a96e' }}>Admin Dashboard</p>
-          </div>
+          {/* Sign out for mobile */}
+          <button
+            onClick={handleSignOut}
+            className="md:hidden"
+            style={{
+              fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
+              fontSize: '13px',
+              fontWeight: 500,
+              color: '#f2f1ed',
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(180,174,172,0.3)',
+              borderRadius: '6px',
+              padding: '6px 12px',
+            }}
+          >
+            Sign out
+          </button>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <BranchSwitcher value={branchSlug} onChange={handleBranchChange} />
-          <span style={{ fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif', fontSize: '15px', color: '#b4aeac', display: 'none' }} className="md:inline">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+          <div className="w-full sm:w-auto">
+            <BranchSwitcher value={branchSlug} onChange={handleBranchChange} />
+          </div>
+          <span style={{ fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif', fontSize: '15px', color: '#b4aeac' }} className="hidden md:inline">
             Logged in as <strong style={{ color: '#ffffff' }}>{adminEmail}</strong>
           </span>
           <button
             onClick={handleSignOut}
+            className="hidden md:block"
             style={{
               fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
               fontSize: '14px',
@@ -477,12 +488,11 @@ export default function BookingsDashboard({
 
       {/* ── Tab Bar ── */}
       <div
+        className="flex overflow-x-auto"
         style={{
           backgroundColor: '#0a0a0a',
           borderBottom: '1px solid rgba(180,174,172,0.15)',
           padding: '0 28px',
-          display: 'flex',
-          gap: '0',
         }}
       >
         {['bookings', 'customers', 'feedback', 'members'].map((tab) => {
@@ -564,12 +574,7 @@ export default function BookingsDashboard({
 
         {/* ── Stats row ── */}
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '20px',
-            marginBottom: '40px',
-          }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10"
         >
           {[
             { label: 'Total Bookings', value: stats.total },
@@ -603,17 +608,7 @@ export default function BookingsDashboard({
 
         {/* ── Filters ── */}
         <div
-          style={{
-            backgroundColor: '#111111',
-            border: '1px solid rgba(180,174,172,0.15)',
-            borderRadius: '10px',
-            padding: '20px 24px',
-            marginBottom: '24px',
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '16px',
-            alignItems: 'center',
-          }}
+          className="flex flex-col md:flex-row flex-wrap gap-4 items-stretch md:items-center bg-[#111111] border border-[rgba(180,174,172,0.15)] rounded-[10px] p-5 mb-6"
         >
           {/* Search */}
           <input
@@ -621,6 +616,7 @@ export default function BookingsDashboard({
             placeholder="Search by client name or phone…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 min-w-[260px] w-full"
             style={{
               fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
               fontSize: '16px',
@@ -630,15 +626,13 @@ export default function BookingsDashboard({
               borderRadius: '6px',
               padding: '11px 18px',
               outline: 'none',
-              minWidth: '260px',
-              flex: '1 1 260px',
             }}
             onFocus={(e) => (e.currentTarget.style.borderColor = '#c9a96e')}
             onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(180,174,172,0.25)')}
           />
 
           {/* Status tabs */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <div className="flex flex-wrap gap-2">
             {ALL_STATUSES.map((s) => {
               const active = statusFilter === s;
               return (
@@ -702,15 +696,14 @@ export default function BookingsDashboard({
             <>
               {/* Table header — hidden on mobile */}
               <div
+                className="hidden md:grid"
                 style={{
-                  display: 'grid',
                   gridTemplateColumns: '1.8fr 1.4fr 1.8fr 1.3fr 1fr 1fr',
                   gap: '12px',
                   padding: '16px 24px',
                   borderBottom: '1px solid rgba(180,174,172,0.15)',
                   backgroundColor: 'rgba(255,255,255,0.02)',
                 }}
-                className="hidden-mobile"
               >
                 {['Client Name', 'Phone Number', 'Service', 'Appointment', 'Status', 'Submitted'].map((h) => (
                   <span key={h} style={{ ...sectionLabel, fontSize: '13px' }}>
@@ -752,8 +745,8 @@ export default function BookingsDashboard({
                       {/* ── Desktop row ── */}
                     <div
                       onClick={() => setExpandedId(isExpanded ? null : booking.id)}
+                      className="hidden md:grid"
                       style={{
-                        display: 'grid',
                         gridTemplateColumns: '1.8fr 1.4fr 1.8fr 1.3fr 1fr 1fr',
                         gap: '12px',
                         padding: '18px 24px',
@@ -835,13 +828,13 @@ export default function BookingsDashboard({
                     {/* ── Mobile card ── */}
                     <div
                       onClick={() => setExpandedId(isExpanded ? null : booking.id)}
+                      className="block md:hidden"
                       style={{
                         padding: '20px 24px',
                         cursor: 'pointer',
                         borderTop: '1px solid rgba(180,174,172,0.08)',
                         backgroundColor: isExpanded ? 'rgba(201,169,110,0.06)' : 'transparent',
                       }}
-                      className="mobile-only"
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                         <div>
@@ -892,18 +885,6 @@ export default function BookingsDashboard({
         )}
       </div>
 
-      {/* Responsive CSS — inline for admin only */}
-      <style>{`
-        .hidden-mobile { display: grid !important; }
-        .mobile-only   { display: none !important; }
-        @media (max-width: 860px) {
-          .hidden-mobile { display: none !important; }
-          .mobile-only   { display: block !important; }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
